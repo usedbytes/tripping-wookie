@@ -1,5 +1,6 @@
 #!/usr/bin/python2
 
+from STPacketServer import *
 from Packet import *
 import sys
 import socket
@@ -9,6 +10,7 @@ port = int(sys.argv[2])
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((host, port))
+sesh = STSession(sock, (host, port), 1)
 
 #packet = TextPacket("This is a test text packet!")
 #sock.sendall(packet.pack())
@@ -16,10 +18,10 @@ sock.connect((host, port))
 
 def recv(s):
     while 1:
-        data = s.recv(Packet.PacketHeader.size)
-        if not data:
-            return
-        packet = Packet(data)
-        data = s.recv(packet.header.body_size)
-        packet.unpack_body(data)
-        print str(packet)
+        to_read, [], [] = select.select([sesh.socket], [], [])
+        if len(to_read):
+            packet = sesh.do_recv()
+            if packet:
+                print "Got {}".format(packet)
+                break;
+

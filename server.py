@@ -1,14 +1,15 @@
 #!/usr/bin/python2
 
-from PacketSocketServer import *
+from STPacketServer import *
 import sys
 
 HOST, PORT = "localhost", 0
 
-server = PacketServer((HOST, PORT), PacketServerSession)
-ip, port = server.server_address
+server = STServer()
+ip = server.server_address
+port = server.port
 
-server_thread = threading.Thread(target=server.serve_forever)
+server_thread = threading.Thread(target=server.loop)
 server_thread.daemon = True
 server_thread.start()
 print "Server running in: {}".format(server_thread.name)
@@ -21,12 +22,12 @@ def handle_packet(server, message):
     print str(packet)
     ptype = packet.type()
     if ptype == 'echo':
-        server.send(packet, source)
+        server.send((source, packet))
     elif ptype == 'spam':
-        server.send(packet, 0)
+        server.send((0, packet))
 
 while 1:
-    message = server.get()
+    message = server.recv()
     if message:
         # Handle packet
         handle_packet(server, message)
