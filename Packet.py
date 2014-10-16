@@ -87,9 +87,37 @@ class SpamPacket(TextPacket):
         self.body = SpamPacket.Body(text)
         self.header = Packet.PacketHeader('spam', self.body.size())
 
+class FloatListPacket(Packet):
+    class Body:
+        def __init__(self, floats = []):
+            format_str = '!I%df' % len(floats)
+            self.struct = struct.Struct(format_str)
+            self.floats = floats
+
+        def size(self):
+            return self.struct.size
+
+        def pack(self):
+            return self.struct.pack(len(self.floats), *self.floats)
+
+        def unpack(self, data):
+            n = struct.unpack('!I', data[:struct.calcsize('!I')])
+            items = struct.unpack('!%df' % n, data[struct.calcsize('!I'):])
+            self.floats = [f for f in items]
+            format_str = '!I%df' % len(self.floats)
+            self.struct = struct.Struct(format_str)
+
+        def __str__(self):
+            return str(self.floats)
+
+    def __init__(self, floats):
+        self.body = FloatListPacket.Body(floats)
+        self.header = Packet.PacketHeader('flst', self.body.size())
+
 packet_types = {
  'text': TextPacket,
  'echo': EchoPacket,
  'spam': SpamPacket,
+ 'flst': FloatListPacket,
 }
 
