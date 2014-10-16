@@ -87,37 +87,61 @@ class SpamPacket(TextPacket):
         self.body = SpamPacket.Body(text)
         self.header = Packet.PacketHeader('spam', self.body.size())
 
-class FloatListPacket(Packet):
+class ListPacket(Packet):
+    type_str = 'ilst'
     class Body:
-        def __init__(self, floats = []):
-            format_str = '!I%df' % len(floats)
+        format_char = 'i'
+        def __init__(self, vals = []):
+            format_str = '!I%d%c' % (len(vals), self.format_char)
             self.struct = struct.Struct(format_str)
-            self.floats = floats
+            self.vals = vals
 
         def size(self):
             return self.struct.size
 
         def pack(self):
-            return self.struct.pack(len(self.floats), *self.floats)
+            return self.struct.pack(len(self.vals), *self.vals)
 
         def unpack(self, data):
-            n = struct.unpack('!I', data[:struct.calcsize('!I')])
-            items = struct.unpack('!%df' % n, data[struct.calcsize('!I'):])
-            self.floats = [f for f in items]
-            format_str = '!I%df' % len(self.floats)
+            n = struct.unpack('!I', data[:struct.calcsize('!I')])[0]
+            items = struct.unpack('!%d%c' % (n, self.format_char),\
+                    data[struct.calcsize('!I'):])
+            self.vals = [v for v in items]
+            format_str = '!I%d%c' % (len(self.vals), self.format_char)
             self.struct = struct.Struct(format_str)
 
         def __str__(self):
-            return str(self.floats)
+            return str(self.vals)
 
-    def __init__(self, floats):
-        self.body = FloatListPacket.Body(floats)
-        self.header = Packet.PacketHeader('flst', self.body.size())
+    def __init__(self, vals = []):
+        self.body = self.Body(vals)
+        self.header = Packet.PacketHeader(self.type_str, self.body.size())
+
+class IntListPacket(ListPacket):
+    pass
+
+class UintListPacket(ListPacket):
+    type_str = 'ulst'
+    class Body(ListPacket.Body):
+        format_char = 'I'
+
+class FloatListPacket(ListPacket):
+    type_str = 'flst'
+    class Body(ListPacket.Body):
+        format_char = 'f'
+
+class DblListPacket(ListPacket):
+    type_str = 'dlst'
+    class Body(ListPacket.Body):
+        format_char = 'd'
 
 packet_types = {
  'text': TextPacket,
  'echo': EchoPacket,
  'spam': SpamPacket,
+ 'ilst': IntListPacket,
+ 'ulst': UintListPacket,
  'flst': FloatListPacket,
+ 'dlst': DblListPacket,
 }
 
