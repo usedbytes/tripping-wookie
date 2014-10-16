@@ -52,6 +52,6 @@ plt.show(block = False)
 while 1:
     packet = sesh.do_recv()
     if packet:
-        lp.add_sample(packet.body.floats)
+        lp.add_sample(packet.body.vals)
         lp.redraw()
         print "Got {}".format(packet)
